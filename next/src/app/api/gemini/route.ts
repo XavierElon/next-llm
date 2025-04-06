@@ -27,13 +27,15 @@ export async function POST(req: Request) {
       }
     })
 
-    // Generate content directly
     try {
       console.log('Generating content with model:', model)
-      const result = await modelInstance.generateContent(prompt)
+      // Convert prompt to string if it's not already
+      const promptText = typeof prompt === 'string' ? prompt : JSON.stringify(prompt)
+
+      const result = await modelInstance.generateContent([{ text: promptText }])
       console.log('Raw result:', result)
 
-      const response = result.response
+      const response = await result.response
       console.log('Response:', response)
 
       const text = response.text()

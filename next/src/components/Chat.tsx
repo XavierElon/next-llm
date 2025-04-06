@@ -3,6 +3,7 @@
 import { useState, KeyboardEvent, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { DNA } from 'react-loader-spinner'
+import Sidebar from './Sidebar'
 
 interface Message {
   id: string
@@ -349,75 +350,11 @@ export default function Chat() {
 
   return (
     <div className="flex h-screen bg-[#1E1E1E] text-white">
-      {/* Left Sidebar */}
-      <div className="w-[280px] flex flex-col border-r border-gray-700">
-        {/* Model Select */}
-        <div className="p-4 border-b border-gray-700">
-          <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg text-sm" disabled={isLoading}>
-            {AVAILABLE_MODELS.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* New Chat Button */}
-        <div className="p-4">
-          <button onClick={createNewChat} className="w-full p-3 flex items-center gap-2 rounded-lg border border-gray-700 hover:bg-gray-800 transition-colors">
-            <span>+</span>
-            <span>New chat</span>
-          </button>
-        </div>
-
-        {/* Chat List */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="px-2 space-y-1">
-            {chats.map((chat) => (
-              <div key={`chat-${chat.id}-${chat.title.substring(0, 10)}`} className={`group flex items-center p-3 rounded-lg cursor-pointer ${currentChat?.id === chat.id ? 'bg-gray-800' : 'hover:bg-gray-800'}`}>
-                {editingTitle === chat.id ? (
-                  <div className="flex flex-1 items-center gap-1">
-                    <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="flex-1 p-1 bg-gray-700 border border-gray-600 rounded text-sm" autoFocus />
-                    <button onClick={() => updateChatTitle(chat.id, newTitle)} className="p-1 text-gray-400 hover:text-green-500">
-                      ✓
-                    </button>
-                    <button onClick={() => setEditingTitle(null)} className="p-1 text-gray-400 hover:text-red-500">
-                      ✗
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <button onClick={() => setCurrentChat(chat)} className="flex-1 text-left truncate text-sm">
-                      {chat.title}
-                    </button>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          startEditingTitle(chat.id, chat.title)
-                        }}
-                        className="p-1 text-gray-400 hover:text-white">
-                        ✏️
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          deleteChat(chat.id)
-                        }}
-                        className="p-1 text-gray-400 hover:text-red-500">
-                        🗑️
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Sidebar */}
+      <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} chats={chats} currentChat={currentChat} selectedModel={selectedModel} onModelChange={setSelectedModel} onChatSelect={setCurrentChat} onCreateNewChat={createNewChat} onDeleteChat={deleteChat} onUpdateChatTitle={updateChatTitle} />
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'ml-[280px]' : 'ml-0'}`}>
         {/* Chat Input at Top */}
         <div className="border-b border-gray-700 p-4 sticky top-0 bg-[#1E1E1E] z-10">
           <div className="max-w-3xl mx-auto">
