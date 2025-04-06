@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, KeyboardEvent, useEffect } from 'react'
+import { useState, KeyboardEvent, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { DNA } from 'react-loader-spinner'
 import Sidebar from './Sidebar'
@@ -35,10 +35,18 @@ export default function Chat() {
   const [editingTitle, setEditingTitle] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState('')
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     initializeUser()
   }, [])
+
+  useEffect(() => {
+    // Auto-scroll to the bottom when new messages are added
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [currentChat?.messages])
 
   const initializeUser = async () => {
     try {
@@ -305,27 +313,29 @@ export default function Chat() {
   return (
     <div className="flex h-screen text-white">
       <Header selectedModel={selectedModel} onModelChange={setSelectedModel} />
-      <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} chats={chats} currentChat={currentChat} onChatSelect={setCurrentChat} onCreateNewChat={createNewChat} onDeleteChat={deleteChat} onUpdateChatTitle={updateChatTitle} />
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        chats={chats}
+        currentChat={currentChat}
+        onChatSelect={setCurrentChat}
+        onCreateNewChat={createNewChat}
+        onDeleteChat={deleteChat}
+        onUpdateChatTitle={updateChatTitle}
+        className="bg-[#151617]" // Distinct sidebar background
+      />
 
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col min-h-screen">
-        <div className="flex-1 flex flex-col pt-16">
-          {/* Chat Input at Top */}
-          <div className="border-b border-gray-700 p-4 sticky top-16 z-10">
-            <div className="max-w-3xl mx-auto">
-              <div className="relative">
-                <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={handleKeyDown} className="w-full p-4 pr-24 bg-gray-800 border border-gray-700 rounded-lg resize-none text-white placeholder-gray-400" placeholder="Ask Gemini..." rows={1} />
-                <button onClick={handleSubmit} disabled={isLoading || !prompt.trim() || !currentChat} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-white disabled:text-gray-600">
-                  {isLoading ? <span className="loading">...</span> : <span>↵</span>}
-                </button>
-              </div>
-              <p className="mt-2 text-xs text-center text-gray-400">Gemini can make mistakes, so double-check its responses</p>
-            </div>
-          </div>
-
-          {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            {currentChat?.messages?.map((message, index) => (
+      <main className="flex-1 flex flex-col h-screen">
+        {/* Chat Messages - Scrollable with padding at the bottom */}
+        <div
+          className="flex-1 overflow-y-auto p-4 space-y-6"
+          style={{
+            paddingBottom: '150px', // Ensures space for the fixed chat input bar
+            paddingTop: '64px' // Accounts for the header height
+          }}>
+          {currentChat?.messages?.length ? (
+            currentChat.messages.map((message, index) => (
               <div key={`msg-${message.id}-${index}`} className={`flex max-w-3xl mx-auto ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`p-4 rounded-lg max-w-[90%] ${message.role === 'user' ? 'bg-gray-800 text-white' : message.content === '' ? 'bg-transparent' : 'bg-transparent text-white'}`}>
                   {message.role === 'assistant' && message.content === '' ? (
@@ -339,7 +349,25 @@ export default function Chat() {
                   )}
                 </div>
               </div>
-            ))}
+            ))
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-white text-lg">Hello, {userId ? 'User' : 'Xavier'}</p>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Chat Input - Fixed at the Bottom */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 border-t border-gray-700">
+          <div className="max-w-3xl mx-auto">
+            <div className="relative">
+              <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={handleKeyDown} className="w-full p-4 pr-24 bg-gray-800 border border-gray-700 rounded-lg resize-none text-white placeholder-gray-400" placeholder="Ask Gemini..." rows={1} />
+              <button onClick={handleSubmit} disabled={isLoading || !prompt.trim() || !currentChat} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-white disabled:text-gray-600">
+                {isLoading ? <span className="loading">...</span> : <span>↵</span>}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-center text-gray-400">Gemini can make mistakes, so double-check its responses</p>
           </div>
         </div>
       </main>

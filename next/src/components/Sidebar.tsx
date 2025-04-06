@@ -77,7 +77,7 @@ export default function Sidebar({ isOpen, onToggle, chats, currentChat, onChatSe
   return (
     <>
       {/* Sidebar */}
-      <div className={`fixed top-16 left-0 h-[calc(100%-4rem)] flex flex-col bg-[#1E1E1E] transition-all duration-300 ${isOpen ? 'w-[280px]' : 'w-16'} border-r border-gray-700`}>
+      <div className={`fixed top-16 left-0 h-[calc(100%-4rem)] flex flex-col bg-[#282A2C] transition-all duration-300 ${isOpen ? 'w-[280px]' : 'w-16'} border-r border-gray-700`}>
         {/* Top Icons Section */}
         <div className="flex flex-col gap-4 p-4">
           {/* Hamburger Menu */}

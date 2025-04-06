@@ -28,7 +28,7 @@ export default function RootLayout({
       <head>
         <meta name="darkreader-lock" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased dark:bg-[#1E1E1E] dark:text-white`} suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased dark:bg-[#1B1C1D] dark:text-white`} suppressHydrationWarning>
         <NextDevtoolsProvider>{children}</NextDevtoolsProvider>
       </body>
     </html>
