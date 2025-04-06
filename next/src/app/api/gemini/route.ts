@@ -16,11 +16,30 @@ export async function POST(req: Request) {
     }
 
     const modelInstance = genAI.getGenerativeModel({ model })
-    const result = await modelInstance.generateContent(prompt)
-    const response = await result.response
-    const text = response.text()
+    const result = await modelInstance.generateContentStream(prompt)
 
-    return Response.json({ text })
+    // Create a ReadableStream to stream the response
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of result.stream) {
+            const text = chunk.text()
+            controller.enqueue(text)
+          }
+          controller.close()
+        } catch (error) {
+          controller.error(error)
+        }
+      }
+    })
+
+    // Return the stream with appropriate headers
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain',
+        'Transfer-Encoding': 'chunked'
+      }
+    })
   } catch (error) {
     console.error('Error:', error)
     return Response.json({ error: 'Failed to process the request' }, { status: 500 })

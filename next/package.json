@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
+    "@next-devtools/core": "^0.3.0-beta.1",
     "@prisma/client": "^6.5.0",
     "next": "15.2.4",
     "pg": "^8.14.1",

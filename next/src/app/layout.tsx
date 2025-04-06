@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { NextDevtoolsProvider } from '@next-devtools/core'
 import './globals.css'
 
 const geistSans = Geist({
@@ -23,8 +24,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
+    <html lang="en" suppressHydrationWarning className="dark">
+      <head>
+        <meta name="darkreader-lock" />
+      </head>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased dark:bg-[#1E1E1E] dark:text-white`} suppressHydrationWarning>
+        <NextDevtoolsProvider>{children}</NextDevtoolsProvider>
+      </body>
     </html>
   )
 }
