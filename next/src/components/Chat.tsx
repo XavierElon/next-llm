@@ -20,7 +20,6 @@ interface Chat {
 
 const AVAILABLE_MODELS = [
   { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
-  // { id: 'gemini-pro-vision', name: 'Gemini 1.0 Pro Vision' },
   { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
   { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' }
 ]
@@ -43,7 +42,6 @@ export default function Chat() {
 
   const initializeUser = async () => {
     try {
-      // First try to get existing users
       const usersRes = await fetch('/api/users')
       const users = await usersRes.json()
 
@@ -51,7 +49,6 @@ export default function Chat() {
         setUserId(users[0].id)
         fetchChats(users[0].id)
       } else {
-        // Create a new user if none exist
         const newUserRes = await fetch('/api/users', {
           method: 'POST',
           headers: {
@@ -75,12 +72,10 @@ export default function Chat() {
     try {
       const res = await fetch(`/api/chats?userId=${userId}`)
       const data = await res.json()
-      // Only set chats if we have actual chats from the database
       if (data.length > 0) {
         setChats(data)
         setCurrentChat(data[0])
       } else {
-        // If no chats, set empty arrays
         setChats([])
         setCurrentChat(null)
       }
@@ -92,9 +87,8 @@ export default function Chat() {
   }
 
   const createNewChat = () => {
-    // Create a temporary chat object for UI only
     const tempChat: Chat = {
-      id: -1, // Use a negative number for temporary chats
+      id: -1,
       title: 'New Chat',
       messages: []
     }
@@ -112,7 +106,6 @@ export default function Chat() {
     try {
       let chat: Chat | null = currentChat
 
-      // Create a new chat if one doesn't exist or if it's a temporary chat
       if (!chat || chat.id < 0) {
         const newChatRes = await fetch('/api/chats', {
           method: 'POST',
@@ -134,7 +127,6 @@ export default function Chat() {
         throw new Error('Failed to create or get chat')
       }
 
-      // Save user message to database
       const userRes = await fetch(`/api/chats/${chat.id}/messages`, {
         method: 'POST',
         headers: {
@@ -147,7 +139,6 @@ export default function Chat() {
       })
       const userMessageData = await userRes.json()
 
-      // Update chat title if this is the first message
       if (chat.messages.length === 0) {
         const titleRes = await fetch('/api/chats', {
           method: 'PATCH',
@@ -164,7 +155,6 @@ export default function Chat() {
         setChats((prev) => prev.map((c) => (c.id === chat!.id ? updatedChat : c)))
         setCurrentChat(updatedChat)
       } else {
-        // Add only the user message to the UI
         setCurrentChat((prev) => {
           if (!prev) return null
           return {
@@ -174,14 +164,12 @@ export default function Chat() {
         })
       }
 
-      // Create a temporary assistant message for loading state
       const tempAssistantMessage: Message = {
         id: 'temp-' + Date.now(),
         role: 'assistant',
         content: ''
       }
 
-      // Add the temporary message to show loading state
       setCurrentChat((prev) => {
         if (!prev) return null
         return {
@@ -190,7 +178,6 @@ export default function Chat() {
         }
       })
 
-      // Get AI response
       const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: {
@@ -208,7 +195,6 @@ export default function Chat() {
 
       const { text } = await response.json()
 
-      // Update the temporary message with the response
       setCurrentChat((prev) => {
         if (!prev) return null
         const messages = [...prev.messages]
@@ -225,7 +211,6 @@ export default function Chat() {
         }
       })
 
-      // Save the final assistant message
       const assistantRes = await fetch(`/api/chats/${chat!.id}/messages`, {
         method: 'POST',
         headers: {
@@ -238,7 +223,6 @@ export default function Chat() {
       })
       const assistantMessageData = await assistantRes.json()
 
-      // Update current chat with the final message
       setCurrentChat((prev) => {
         if (!prev) return null
         const messages = [...prev.messages]
@@ -252,7 +236,6 @@ export default function Chat() {
         }
       })
 
-      // Refresh chats list
       fetchChats(userId!)
     } catch (error) {
       console.error('Error:', error)
@@ -320,16 +303,15 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex h-screen bg-[#1E1E1E] text-white">
+    <div className="flex h-screen text-white">
       <Header selectedModel={selectedModel} onModelChange={setSelectedModel} />
-
       <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} chats={chats} currentChat={currentChat} onChatSelect={setCurrentChat} onCreateNewChat={createNewChat} onDeleteChat={deleteChat} onUpdateChatTitle={updateChatTitle} />
 
       {/* Main Chat Area */}
-      <main className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-[280px]' : 'ml-16'}`}>
+      <main className="flex-1 flex flex-col min-h-screen">
         <div className="flex-1 flex flex-col pt-16">
           {/* Chat Input at Top */}
-          <div className="border-b border-gray-700 p-4 sticky top-16 bg-[#1E1E1E] z-10">
+          <div className="border-b border-gray-700 p-4 sticky top-16 z-10">
             <div className="max-w-3xl mx-auto">
               <div className="relative">
                 <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={handleKeyDown} className="w-full p-4 pr-24 bg-gray-800 border border-gray-700 rounded-lg resize-none text-white placeholder-gray-400" placeholder="Ask Gemini..." rows={1} />
