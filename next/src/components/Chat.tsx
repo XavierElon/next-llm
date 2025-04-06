@@ -327,7 +327,7 @@ export default function Chat() {
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
             {currentChat?.messages?.map((message, index) => (
               <div key={`msg-${message.id}-${index}`} className={`flex max-w-3xl mx-auto ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`p-4 rounded-lg max-w-[90%] ${message.role === 'user' ? 'bg-blue-600 text-white' : message.content === '' ? 'bg-transparent' : 'bg-gray-800 text-white'}`}>
+                <div className={`p-4 rounded-lg max-w-[90%] ${message.role === 'user' ? 'bg-gray-800 text-white' : message.content === '' ? 'bg-transparent' : 'bg-transparent text-white'}`}>
                   {message.role === 'assistant' && message.content === '' ? (
                     <div className="flex justify-center items-center">
                       <DNA visible={true} height="80" width="80" ariaLabel="dna-loading" wrapperStyle={{ backgroundColor: 'transparent' }} wrapperClass="dna-wrapper" />

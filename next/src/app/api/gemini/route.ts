@@ -4,8 +4,6 @@ if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
   throw new Error('Missing Gemini API key')
 }
 
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY)
-
 export async function POST(req: Request) {
   try {
     const { prompt, model } = await req.json()
@@ -15,29 +13,31 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Prompt is required' }, { status: 400 })
     }
 
-    // Validate model name (optional: add more validation if needed)
-    const validModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'] // Update this list based on API docs
+    // Validate model name
+    const validModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash']
     if (!validModels.includes(model)) {
       return Response.json({ error: `Invalid model: ${model}` }, { status: 400 })
     }
 
+    // Initialize a fresh GoogleGenerativeAI client for each request
+    const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY)
     const modelInstance = genAI.getGenerativeModel({
       model,
+      // Simplify generationConfig to avoid potential serialization issues
       generationConfig: {
         temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
         maxOutputTokens: 8192
       }
     })
 
-    // Ensure prompt is a string
+    // Ensure prompt is a string and log it for debugging
     const promptText = typeof prompt === 'string' ? prompt : JSON.stringify(prompt)
     console.log('Prompt text:', promptText)
+    console.log('Model instance:', modelInstance)
 
-    // Try a simpler input format first
+    // Generate content
     console.log('Generating content with model:', model)
-    const result = await modelInstance.generateContent(promptText) // Simplified input
+    const result = await modelInstance.generateContent(promptText)
     console.log('Raw result:', result)
 
     const response = await result.response
@@ -59,7 +59,8 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }) // Use a known valid model
+    const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY)
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
     const result = await model.generateContent('List available models')
     const response = await result.response
     const text = response.text()
