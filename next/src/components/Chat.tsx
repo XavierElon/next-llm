@@ -2,7 +2,7 @@
 
 import { useState, KeyboardEvent, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ThreeDots } from 'react-loader-spinner'
+import { DNA } from 'react-loader-spinner'
 
 interface Message {
   id: string
@@ -96,35 +96,31 @@ export default function Chat() {
     try {
       const res = await fetch(`/api/chats?userId=${userId}`)
       const data = await res.json()
-      setChats(data)
-      if (data.length > 0 && !currentChat) {
+      // Only set chats if we have actual chats from the database
+      if (data.length > 0) {
+        setChats(data)
         setCurrentChat(data[0])
+      } else {
+        // If no chats, set empty arrays
+        setChats([])
+        setCurrentChat(null)
       }
     } catch (error) {
       console.error('Error fetching chats:', error)
+      setChats([])
+      setCurrentChat(null)
     }
   }
 
-  const createNewChat = async () => {
-    if (!userId) return
-
-    try {
-      const res = await fetch('/api/chats', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          title: 'New Chat',
-          userId: userId
-        })
-      })
-      const newChat = await res.json()
-      setChats((prev) => [newChat, ...prev])
-      setCurrentChat(newChat)
-    } catch (error) {
-      console.error('Error creating chat:', error)
+  const createNewChat = () => {
+    // Create a temporary chat object for UI only
+    const tempChat: Chat = {
+      id: 'temp-' + Date.now(),
+      title: 'New Chat',
+      messages: []
     }
+    setCurrentChat(tempChat)
+    // Don't add to chats list at all
   }
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -138,8 +134,8 @@ export default function Chat() {
     try {
       let chat: Chat | null = currentChat
 
-      // Create a new chat if one doesn't exist
-      if (!chat) {
+      // Create a new chat if one doesn't exist or if it's a temporary chat
+      if (!chat || (typeof chat.id === 'string' && chat.id.startsWith('temp-'))) {
         const newChatRes = await fetch('/api/chats', {
           method: 'POST',
           headers: {
@@ -152,7 +148,8 @@ export default function Chat() {
         })
         chat = await newChatRes.json()
         setCurrentChat(chat)
-        setChats((prev) => [chat!, ...prev])
+        // Replace the temporary chat with the real one
+        setChats((prev) => prev.map((c) => (c.id === currentChat?.id ? chat! : c)))
       }
 
       if (!chat) {
@@ -438,9 +435,11 @@ export default function Chat() {
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {currentChat?.messages?.map((message, index) => (
             <div key={`msg-${message.id}-${index}`} className={`flex max-w-3xl mx-auto ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`p-4 rounded-lg max-w-[90%] ${message.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-white'}`}>
+              <div className={`p-4 rounded-lg max-w-[90%] ${message.role === 'user' ? 'bg-blue-600 text-white' : message.content === '' ? 'bg-transparent' : 'bg-gray-800 text-white'}`}>
                 {message.role === 'assistant' && message.content === '' ? (
-                  <ThreeDots visible={true} height="80" width="80" color="#4fa94d" radius="9" ariaLabel="three-dots-loading" wrapperStyle={{}} wrapperClass="" />
+                  <div className="flex justify-center items-center">
+                    <DNA visible={true} height="80" width="80" ariaLabel="dna-loading" wrapperStyle={{ backgroundColor: 'transparent' }} wrapperClass="dna-wrapper" />
+                  </div>
                 ) : (
                   <div className="prose prose-invert max-w-none">
                     <p className="whitespace-pre-wrap text-sm break-words overflow-hidden">{message.content}</p>

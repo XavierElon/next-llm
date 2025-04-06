@@ -30,9 +30,7 @@ export async function POST(req: Request) {
     // Generate content directly
     try {
       console.log('Generating content with model:', model)
-      const result = await modelInstance.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }]
-      })
+      const result = await modelInstance.generateContent(prompt)
       console.log('Raw result:', result)
 
       const response = result.response
