@@ -2,6 +2,7 @@
 
 import { useState, KeyboardEvent, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { ThreeDots } from 'react-loader-spinner'
 
 interface Message {
   id: string
@@ -22,6 +23,28 @@ const AVAILABLE_MODELS = [
   { id: 'gemini-1.5-flash-latest', name: 'Gemini 1.5 Flash' },
   { id: 'gemini-1.5-pro-latest', name: 'Gemini 1.5 Pro' }
 ]
+
+// Loading indicator with an effect that doesn't rely on animations
+const LoadingDots = () => {
+  const [dots, setDots] = useState('.')
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDots((prevDots) => {
+        if (prevDots.length >= 3) return '.'
+        return prevDots + '.'
+      })
+    }, 500)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <div style={{ padding: '8px' }}>
+      <span style={{ fontSize: '24px', letterSpacing: '2px' }}>{dots}</span>
+    </div>
+  )
+}
 
 export default function Chat() {
   const router = useRouter()
@@ -136,7 +159,7 @@ export default function Chat() {
         throw new Error('Failed to create or get chat')
       }
 
-      // Save user message
+      // Save user message to database
       const userRes = await fetch(`/api/chats/${chat.id}/messages`, {
         method: 'POST',
         headers: {
@@ -164,26 +187,41 @@ export default function Chat() {
         const updatedChat = await titleRes.json()
         chat = updatedChat
         setChats((prev) => prev.map((c) => (c.id === chat!.id ? updatedChat : c)))
-        setCurrentChat(updatedChat)
+        setCurrentChat((prev) => {
+          if (!prev) return updatedChat
+          return {
+            ...updatedChat,
+            messages: [...prev.messages, userMessageData]
+          }
+        })
+      } else {
+        // Add only the user message to the UI
+        setCurrentChat((prev) => {
+          if (!prev) return null
+          return {
+            ...prev,
+            messages: [...prev.messages, userMessageData]
+          }
+        })
       }
 
-      // Create a temporary assistant message for streaming
+      // Create a temporary assistant message for loading state
       const tempAssistantMessage: Message = {
         id: 'temp-' + Date.now(),
         role: 'assistant',
         content: ''
       }
 
-      // Update current chat with both messages at once
+      // Add the temporary message to show loading state
       setCurrentChat((prev) => {
         if (!prev) return null
         return {
           ...prev,
-          messages: [...prev.messages, userMessageData, tempAssistantMessage]
+          messages: [...prev.messages, tempAssistantMessage]
         }
       })
 
-      // Get AI response with streaming
+      // Get AI response
       const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: {
@@ -199,37 +237,24 @@ export default function Chat() {
         throw new Error('Failed to get AI response')
       }
 
-      const reader = response.body?.getReader()
-      if (!reader) {
-        throw new Error('No reader available')
-      }
+      const { text } = await response.json()
 
-      let accumulatedContent = ''
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        // Convert the chunk to text
-        const chunk = new TextDecoder().decode(value)
-        accumulatedContent += chunk
-
-        // Update the temporary message with the accumulated content
-        setCurrentChat((prev) => {
-          if (!prev) return null
-          const messages = [...prev.messages]
-          const tempMessageIndex = messages.findIndex((msg) => msg.id === tempAssistantMessage.id)
-          if (tempMessageIndex !== -1) {
-            messages[tempMessageIndex] = {
-              ...messages[tempMessageIndex],
-              content: accumulatedContent
-            }
+      // Update the temporary message with the response
+      setCurrentChat((prev) => {
+        if (!prev) return null
+        const messages = [...prev.messages]
+        const tempMessageIndex = messages.findIndex((msg) => msg.id === tempAssistantMessage.id)
+        if (tempMessageIndex !== -1) {
+          messages[tempMessageIndex] = {
+            ...messages[tempMessageIndex],
+            content: text
           }
-          return {
-            ...prev,
-            messages
-          }
-        })
-      }
+        }
+        return {
+          ...prev,
+          messages
+        }
+      })
 
       // Save the final assistant message
       const assistantRes = await fetch(`/api/chats/${chat!.id}/messages`, {
@@ -239,7 +264,7 @@ export default function Chat() {
         },
         body: JSON.stringify({
           role: 'assistant',
-          content: accumulatedContent
+          content: text
         })
       })
       const assistantMessageData = await assistantRes.json()
@@ -329,6 +354,17 @@ export default function Chat() {
     <div className="flex h-screen bg-[#1E1E1E] text-white">
       {/* Left Sidebar */}
       <div className="w-[280px] flex flex-col border-r border-gray-700">
+        {/* Model Select */}
+        <div className="p-4 border-b border-gray-700">
+          <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg text-sm" disabled={isLoading}>
+            {AVAILABLE_MODELS.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* New Chat Button */}
         <div className="p-4">
           <button onClick={createNewChat} className="w-full p-3 flex items-center gap-2 rounded-lg border border-gray-700 hover:bg-gray-800 transition-colors">
@@ -342,59 +378,51 @@ export default function Chat() {
           <div className="px-2 space-y-1">
             {chats.map((chat) => (
               <div key={`chat-${chat.id}-${chat.title.substring(0, 10)}`} className={`group flex items-center p-3 rounded-lg cursor-pointer ${currentChat?.id === chat.id ? 'bg-gray-800' : 'hover:bg-gray-800'}`}>
-                <button onClick={() => setCurrentChat(chat)} className="flex-1 text-left truncate text-sm">
-                  {chat.title}
-                </button>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      startEditingTitle(chat.id, chat.title)
-                    }}
-                    className="p-1 text-gray-400 hover:text-white">
-                    ✏️
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      deleteChat(chat.id)
-                    }}
-                    className="p-1 text-gray-400 hover:text-red-500">
-                    🗑️
-                  </button>
-                </div>
+                {editingTitle === chat.id ? (
+                  <div className="flex flex-1 items-center gap-1">
+                    <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="flex-1 p-1 bg-gray-700 border border-gray-600 rounded text-sm" autoFocus />
+                    <button onClick={() => updateChatTitle(chat.id, newTitle)} className="p-1 text-gray-400 hover:text-green-500">
+                      ✓
+                    </button>
+                    <button onClick={() => setEditingTitle(null)} className="p-1 text-gray-400 hover:text-red-500">
+                      ✗
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <button onClick={() => setCurrentChat(chat)} className="flex-1 text-left truncate text-sm">
+                      {chat.title}
+                    </button>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          startEditingTitle(chat.id, chat.title)
+                        }}
+                        className="p-1 text-gray-400 hover:text-white">
+                        ✏️
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          deleteChat(chat.id)
+                        }}
+                        className="p-1 text-gray-400 hover:text-red-500">
+                        🗑️
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Model Select */}
-        <div className="p-4 border-t border-gray-700">
-          <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg text-sm" disabled={isLoading}>
-            {AVAILABLE_MODELS.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.name}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
-        {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          {currentChat?.messages?.map((message, index) => (
-            <div key={`msg-${message.id}-${index}`} className={`flex max-w-3xl mx-auto ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`p-4 rounded-lg max-w-[90%] ${message.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-white'}`}>
-                <p className="whitespace-pre-wrap text-sm">{message.content}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Chat Input */}
-        <div className="border-t border-gray-700 p-4">
+        {/* Chat Input at Top */}
+        <div className="border-b border-gray-700 p-4 sticky top-0 bg-[#1E1E1E] z-10">
           <div className="max-w-3xl mx-auto">
             <div className="relative">
               <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={handleKeyDown} className="w-full p-4 pr-24 bg-gray-800 border border-gray-700 rounded-lg resize-none text-white placeholder-gray-400" placeholder="Ask Gemini..." rows={1} />
@@ -404,6 +432,23 @@ export default function Chat() {
             </div>
             <p className="mt-2 text-xs text-center text-gray-400">Gemini can make mistakes, so double-check its responses</p>
           </div>
+        </div>
+
+        {/* Chat Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {currentChat?.messages?.map((message, index) => (
+            <div key={`msg-${message.id}-${index}`} className={`flex max-w-3xl mx-auto ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`p-4 rounded-lg max-w-[90%] ${message.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-white'}`}>
+                {message.role === 'assistant' && message.content === '' ? (
+                  <ThreeDots visible={true} height="80" width="80" color="#4fa94d" radius="9" ariaLabel="three-dots-loading" wrapperStyle={{}} wrapperClass="" />
+                ) : (
+                  <div className="prose prose-invert max-w-none">
+                    <p className="whitespace-pre-wrap text-sm break-words overflow-hidden">{message.content}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

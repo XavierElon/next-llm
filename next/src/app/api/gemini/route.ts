@@ -10,36 +10,46 @@ const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY)
 export async function POST(req: Request) {
   try {
     const { prompt, model } = await req.json()
+    console.log('Received request:', { prompt, model })
 
     if (!prompt) {
       return Response.json({ error: 'Prompt is required' }, { status: 400 })
     }
 
-    const modelInstance = genAI.getGenerativeModel({ model })
-    const result = await modelInstance.generateContentStream(prompt)
-
-    // Create a ReadableStream to stream the response
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of result.stream) {
-            const text = chunk.text()
-            controller.enqueue(text)
-          }
-          controller.close()
-        } catch (error) {
-          controller.error(error)
-        }
+    // Get the appropriate model
+    const modelInstance = genAI.getGenerativeModel({
+      model,
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 8192
       }
     })
 
-    // Return the stream with appropriate headers
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/plain',
-        'Transfer-Encoding': 'chunked'
+    // Generate content directly
+    try {
+      console.log('Generating content with model:', model)
+      const result = await modelInstance.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }]
+      })
+      console.log('Raw result:', result)
+
+      const response = result.response
+      console.log('Response:', response)
+
+      const text = response.text()
+      console.log('Generated text:', text)
+
+      if (!text) {
+        throw new Error('No text generated from response')
       }
-    })
+
+      return Response.json({ text })
+    } catch (error) {
+      console.error('Error generating content:', error)
+      throw error
+    }
   } catch (error) {
     console.error('Error:', error)
     return Response.json({ error: 'Failed to process the request' }, { status: 500 })

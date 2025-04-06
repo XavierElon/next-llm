@@ -1,14 +1,16 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 
-export async function POST(req: Request, { params }: { params: { chatId: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ chatId: string }> }) {
   try {
     const { role, content } = await req.json()
+    const { chatId } = await params
+
     const message = await prisma.message.create({
       data: {
         role,
         content,
-        conversationId: parseInt(params.chatId)
+        conversationId: parseInt(chatId)
       }
     })
     return NextResponse.json(message)

@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
   --background: #ffffff;
@@ -23,4 +23,36 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Loading dots animation */
+@keyframes bounceDot {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.loading-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: white;
+  display: inline-block;
+  margin: 0 3px;
+}
+
+.loading-dot:nth-child(1) {
+  animation: bounceDot 1.4s infinite;
+}
+
+.loading-dot:nth-child(2) {
+  animation: bounceDot 1.4s infinite 0.2s;
+}
+
+.loading-dot:nth-child(3) {
+  animation: bounceDot 1.4s infinite 0.4s;
 }

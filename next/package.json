@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "NODE_OPTIONS='--inspect' next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -16,7 +16,8 @@
     "pg": "^8.14.1",
     "prisma": "^6.5.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-loader-spinner": "^6.1.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
