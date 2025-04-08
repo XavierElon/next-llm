@@ -1,37 +1,58 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 interface HeaderProps {
   selectedModel: string
   onModelChange: (model: string) => void
+  isSidebarOpen: boolean
 }
 
 const AVAILABLE_MODELS = [
-  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+  // { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
   { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
   { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' }
 ]
 
-export default function Header({ selectedModel, onModelChange }: HeaderProps) {
+export default function Header({ selectedModel, onModelChange, isSidebarOpen }: HeaderProps) {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen)
+  }
+
+  const handleModelSelect = (modelId: string) => {
+    onModelChange(modelId)
+    setIsDropdownOpen(false)
+  }
+
+  const selectedModelName = AVAILABLE_MODELS.find((model) => model.id === selectedModel)?.name
+
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-[#1E1E1E] border-b border-gray-700 z-40 flex items-center px-4">
-      <div className="flex items-center gap-4 ml-16">
-        <div className="flex items-center gap-2">
-          <span className="text-white font-medium">Gemini</span>
-          <span className="text-blue-400">Advanced</span>
-        </div>
-        <div className="relative">
-          <select value={selectedModel} onChange={(e) => onModelChange(e.target.value)} className="appearance-none bg-gray-800 text-white border border-gray-700 rounded-lg py-1 px-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-gray-700 transition-colors">
-            {AVAILABLE_MODELS.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.name}
-              </option>
-            ))}
-          </select>
-          {/* Custom dropdown arrow */}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+    <header className={`fixed top-0 h-16 bg-[#1E1E1E] z-40 flex items-center px-4 transition-all duration-300 ${isSidebarOpen ? 'left-[280px]' : 'left-16'}`} style={{ width: `calc(100% - ${isSidebarOpen ? '280px' : '64px'})` }}>
+      <div className="relative flex flex-col">
+        {/* Gemini Advanced and Arrow */}
+        <div className="flex items-center gap-2 cursor-pointer" onClick={toggleDropdown}>
+          <div className="flex items-center gap-2">
+            <span className="text-white font-medium">Gemini</span>
+            <span className="gradient-text">Advanced</span>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className={`text-gray-400 transform transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}>
             <path d="M6 9l6 6 6-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
+
+        {/* Selected Model Name */}
+        <span className="text-gray-400 text-sm">{selectedModelName}</span>
+
+        {/* Custom Dropdown Menu */}
+        {isDropdownOpen && (
+          <div className="absolute top-12 left-0 mt-1 py-1 w-48 bg-[#1E1F20] border border-[#2D2F31] rounded-lg shadow-lg z-50">
+            {AVAILABLE_MODELS.map((model) => (
+              <button key={model.id} onClick={() => handleModelSelect(model.id)} className="w-full px-4 py-2 text-left text-white text-xs hover:bg-[#3A3C3E] transition-colors">
+                {model.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </header>
   )
