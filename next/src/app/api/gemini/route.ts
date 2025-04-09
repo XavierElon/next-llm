@@ -29,18 +29,11 @@ export async function POST(req: Request) {
     console.log('Prompt text:', promptText)
 
     // Format the prompt for Gemini API
-    const formattedPrompt = {
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              text: promptText
-            }
-          ]
-        }
-      ]
-    }
+    const formattedPrompt = [
+      {
+        text: promptText
+      }
+    ]
 
     // Configuration object
     const generationConfig: GenerationConfig = {

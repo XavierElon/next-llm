@@ -304,7 +304,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex min-h-screen text-white bg-[#1E1E1E]">
+    <div className="flex min-h-screen text-white bg-[#1b1c1d]">
       <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} chats={chats} currentChat={currentChat} onChatSelect={setCurrentChat} onCreateNewChat={createNewChat} onDeleteChat={deleteChat} onUpdateChatTitle={updateChatTitle} />
       <div className="flex-1 flex flex-col">
         <Header selectedModel={selectedModel} onModelChange={setSelectedModel} isSidebarOpen={isSidebarOpen} />
@@ -340,43 +340,35 @@ export default function Chat() {
           </div>
 
           {/* Chat Input - Fixed at the Bottom */}
-          <div className={`fixed bottom-0 p-4 bg-[#1E1E1E] transition-all duration-300 ${isSidebarOpen ? 'left-[280px]' : 'left-16'}`} style={{ width: `calc(100% - ${isSidebarOpen ? '280px' : '64px'})` }}>
+          <div className={`fixed bottom-0 p-4 bg-[#1b1c1d] transition-all duration-300 ${isSidebarOpen ? 'left-[280px]' : 'left-16'}`} style={{ width: `calc(100% - ${isSidebarOpen ? '280px' : '64px'})` }}>
             <div className="max-w-3xl mx-auto">
-              <div className="relative flex items-center bg-[#1E1E1E] border border-[#2D2F31] rounded-lg">
-                {/* Left Icons */}
-                <div className="flex items-center gap-2 pl-3">
-                  <button className="text-gray-400 hover:text-white">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div className="relative flex items-center bg-[#1b1c1d] border border-[#3A3C3E] rounded-xl shadow-lg">
+                {/* Left Section with plus button only */}
+                <div className="absolute bottom-3 left-4 z-10">
+                  <button className="text-gray-400 hover:text-white w-4 h-4 flex items-center justify-center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 4v16m8-8H4" />
                     </svg>
                   </button>
-                  {/* <button className="text-gray-400 hover:text-white">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                      <path d="M9 3v18" />
-                    </svg>
-                  </button> */}
                 </div>
 
                 {/* Textarea */}
-                <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={handleKeyDown} className="flex-1 p-4 bg-[#1E1E1E] border-none rounded-lg resize-none text-white placeholder-gray-400 focus:outline-none" placeholder="Ask Gemini..." rows={1} />
+                <div className="relative flex-1">
+                  {prompt === '' && <div className="absolute top-3 left-4 text-sm text-gray-400 pointer-events-none">Ask Gemini</div>}
+                  <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={handleKeyDown} className="flex-1 w-full pt-3 pb-4 pl-4 pr-4 bg-[#1b1c1d] border-none rounded-xl resize-none text-white placeholder-gray-400 focus:outline-none" placeholder="" rows={2} style={{ minHeight: '70px' }} />
+                </div>
 
                 {/* Right Icons */}
-                <div className="flex items-center gap-2 pr-3">
+                <div className="flex items-center gap-2 pr-4">
                   <button onClick={handleSubmit} disabled={isLoading || !prompt.trim() || !currentChat} className="text-gray-400 hover:text-white disabled:text-gray-600">
                     {isLoading ? (
                       <span className="loading">...</span>
                     ) : (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M5 12h14M12 5l7 7-7 7" />
                       </svg>
                     )}
                   </button>
-                  {/* <button className="text-gray-400 hover:text-white">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 1v6M12 17v6M5 5l14 14M5 19L19 5" />
-                    </svg>
-                  </button> */}
                 </div>
               </div>
             </div>

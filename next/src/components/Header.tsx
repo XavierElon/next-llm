@@ -27,7 +27,7 @@ export default function Header({ selectedModel, onModelChange, isSidebarOpen }: 
   const selectedModelName = AVAILABLE_MODELS.find((model) => model.id === selectedModel)?.name
 
   return (
-    <header className={`fixed top-0 h-16 bg-[#1E1E1E] z-40 flex items-center px-4 transition-all duration-300 ${isSidebarOpen ? 'left-[280px]' : 'left-16'}`} style={{ width: `calc(100% - ${isSidebarOpen ? '280px' : '64px'})` }}>
+    <header className={`fixed top-0 h-16 bg-[#1b1c1d] z-40 flex items-center px-4 transition-all duration-300 ${isSidebarOpen ? 'left-[280px]' : 'left-16'}`} style={{ width: `calc(100% - ${isSidebarOpen ? '280px' : '64px'})` }}>
       <div className="relative flex flex-col">
         {/* Gemini Advanced and Arrow */}
         <div className="flex items-center gap-2 cursor-pointer" onClick={toggleDropdown}>
