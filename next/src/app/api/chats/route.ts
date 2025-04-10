@@ -92,7 +92,7 @@ export async function DELETE(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const { id, title } = await request.json()
+    const { id, title, isPinned } = await request.json()
 
     if (!id || !title) {
       return NextResponse.json({ error: 'id and title are required' }, { status: 400 })
@@ -103,7 +103,8 @@ export async function PATCH(request: Request) {
         id: parseInt(id)
       },
       data: {
-        title
+        title,
+        ...(typeof isPinned === 'boolean' ? { isPinned } : {})
       },
       include: {
         messages: {

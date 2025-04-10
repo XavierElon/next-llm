@@ -9,12 +9,14 @@ interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
+  image?: string
 }
 
 interface Chat {
   id: number
   title: string
   messages: Message[]
+  isPinned: boolean
 }
 
 const AVAILABLE_MODELS = [
@@ -33,7 +35,10 @@ export default function Chat() {
   const [editingTitle, setEditingTitle] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState('')
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [attachedImage, setAttachedImage] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [hoveredChatId, setHoveredChatId] = useState<number | null>(null)
 
   useEffect(() => {
     initializeUser()
@@ -96,14 +101,15 @@ export default function Chat() {
     const tempChat: Chat = {
       id: -1,
       title: 'New Chat',
-      messages: []
+      messages: [],
+      isPinned: false
     }
     setCurrentChat(tempChat)
   }
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
-    if (!prompt.trim() || isLoading) return
+    if ((!prompt.trim() && !attachedImage) || isLoading) return
 
     setIsLoading(true)
     const userMessage = prompt.trim()
@@ -133,6 +139,9 @@ export default function Chat() {
         throw new Error('Failed to create or get chat')
       }
 
+      // Add user message with image if present
+      const userMessageContent = attachedImage ? `${userMessage}\n[Attached Image: ${attachedImage}]` : userMessage
+
       const userRes = await fetch(`/api/chats/${chat.id}/messages`, {
         method: 'POST',
         headers: {
@@ -140,10 +149,14 @@ export default function Chat() {
         },
         body: JSON.stringify({
           role: 'user',
-          content: userMessage
+          content: userMessageContent,
+          image: attachedImage
         })
       })
       const userMessageData = await userRes.json()
+
+      // Clear the attached image
+      setAttachedImage(null)
 
       if (chat.messages.length === 0) {
         const titleRes = await fetch('/api/chats', {
@@ -190,7 +203,8 @@ export default function Chat() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          prompt: userMessage,
+          prompt: userMessageContent,
+          image: attachedImage,
           model: selectedModel
         })
       })
@@ -245,6 +259,7 @@ export default function Chat() {
       fetchChats(userId!)
     } catch (error) {
       console.error('Error:', error)
+      setAttachedImage(null) // Clear image on error
     } finally {
       setIsLoading(false)
     }
@@ -303,9 +318,63 @@ export default function Chat() {
     }
   }
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file')
+      return
+    }
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) throw new Error('Upload failed')
+
+      const { url } = await response.json()
+      setAttachedImage(url)
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('Failed to upload image')
+    }
+  }
+
+  const handlePinClick = async (chatId: number) => {
+    try {
+      const chatToUpdate = chats.find((chat) => chat.id === chatId)
+      if (!chatToUpdate) return
+
+      const res = await fetch(`/api/chats`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: chatId,
+          title: chatToUpdate.title || 'Untitled Chat',
+          isPinned: !chatToUpdate.isPinned
+        })
+      })
+
+      if (!res.ok) throw new Error('Failed to update pin status')
+
+      const updatedChat = await res.json()
+      setChats((prev) => prev.map((chat) => (chat.id === chatId ? updatedChat : chat)))
+    } catch (error) {
+      console.error('Error updating pin status:', error)
+    }
+  }
+
   return (
     <div className="flex min-h-screen text-white bg-[#1b1c1d]">
-      <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} chats={chats} currentChat={currentChat} onChatSelect={setCurrentChat} onCreateNewChat={createNewChat} onDeleteChat={deleteChat} onUpdateChatTitle={updateChatTitle} />
+      <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} chats={[...chats.filter((chat) => chat.isPinned), ...chats.filter((chat) => !chat.isPinned)]} currentChat={currentChat} onChatSelect={setCurrentChat} onCreateNewChat={createNewChat} onDeleteChat={deleteChat} onUpdateChatTitle={updateChatTitle} hoveredChatId={hoveredChatId} setHoveredChatId={setHoveredChatId} onPinChat={handlePinClick} />
       <div className="flex-1 flex flex-col">
         <Header selectedModel={selectedModel} onModelChange={setSelectedModel} isSidebarOpen={isSidebarOpen} />
 
@@ -323,6 +392,11 @@ export default function Chat() {
                       </div>
                     ) : (
                       <div className="prose prose-invert max-w-none">
+                        {message.image && (
+                          <div className="mb-2">
+                            <img src={message.image} alt={message.content} className="max-w-full rounded-lg" />
+                          </div>
+                        )}
                         <p className="whitespace-pre-wrap text-sm break-words overflow-hidden">{message.content}</p>
                       </div>
                     )}
@@ -343,18 +417,31 @@ export default function Chat() {
           <div className={`fixed bottom-0 p-4 bg-[#1b1c1d] transition-all duration-300 ${isSidebarOpen ? 'left-[280px]' : 'left-16'}`} style={{ width: `calc(100% - ${isSidebarOpen ? '280px' : '64px'})` }}>
             <div className="max-w-3xl mx-auto">
               <div className="relative flex items-center bg-[#1b1c1d] border border-[#3A3C3E] rounded-xl shadow-lg">
-                {/* Left Section with plus button only */}
-                <div className="absolute bottom-3 left-4 z-10">
-                  <button className="text-gray-400 hover:text-white w-4 h-4 flex items-center justify-center">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 4v16m8-8H4" />
-                    </svg>
-                  </button>
+                {/* Left Section with plus button and image preview */}
+                <div className="flex flex-col justify-center pl-4 py-3">
+                  {prompt === '' && !attachedImage && <span className="text-sm text-gray-400 mb-1">Ask Gemini</span>}
+                  <div className="relative">
+                    <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
+                    <button className="text-gray-400 hover:text-white w-4 h-4 flex items-center justify-center" onClick={() => fileInputRef.current?.click()}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 4v16m8-8H4" />
+                      </svg>
+                    </button>
+                    {attachedImage && (
+                      <div className="absolute left-6 bottom-0 bg-gray-800 rounded-lg p-1">
+                        <img src={attachedImage} alt="Attached" className="w-16 h-16 object-cover rounded" />
+                        <button onClick={() => setAttachedImage(null)} className="absolute -top-1 -right-1 bg-red-500 rounded-full p-0.5 hover:bg-red-600">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Textarea */}
                 <div className="relative flex-1">
-                  {prompt === '' && <div className="absolute top-3 left-4 text-sm text-gray-400 pointer-events-none">Ask Gemini</div>}
                   <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={handleKeyDown} className="flex-1 w-full pt-3 pb-4 pl-4 pr-4 bg-[#1b1c1d] border-none rounded-xl resize-none text-white placeholder-gray-400 focus:outline-none" placeholder="" rows={2} style={{ minHeight: '70px' }} />
                 </div>
 

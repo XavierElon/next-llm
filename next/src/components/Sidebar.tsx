@@ -6,6 +6,7 @@ interface Chat {
   id: number
   title: string
   messages: { id: string; role: 'user' | 'assistant'; content: string }[]
+  isPinned: boolean
 }
 
 interface SidebarProps {
@@ -17,9 +18,12 @@ interface SidebarProps {
   onCreateNewChat: () => void
   onDeleteChat: (chatId: number) => void
   onUpdateChatTitle: (chatId: number, newTitle: string) => void
+  hoveredChatId: number | null
+  setHoveredChatId: (id: number | null) => void
+  onPinChat: (chatId: number) => void
 }
 
-export default function Sidebar({ isOpen, onToggle, chats, currentChat, onChatSelect, onCreateNewChat, onDeleteChat, onUpdateChatTitle }: SidebarProps) {
+export default function Sidebar({ isOpen, onToggle, chats, currentChat, onChatSelect, onCreateNewChat, onDeleteChat, onUpdateChatTitle, hoveredChatId, setHoveredChatId, onPinChat }: SidebarProps) {
   const [menuOpenId, setMenuOpenId] = useState<number | null>(null)
   const [editingChatId, setEditingChatId] = useState<number | null>(null)
   const [newTitle, setNewTitle] = useState<string>('')
@@ -59,12 +63,6 @@ export default function Sidebar({ isOpen, onToggle, chats, currentChat, onChatSe
     }
     setEditingChatId(null)
     setNewTitle('')
-  }
-
-  const handlePinClick = (chatId: number) => {
-    // Placeholder for pinning functionality
-    console.log(`Pinning chat with ID: ${chatId}`)
-    setMenuOpenId(null)
   }
 
   const handleMenuClick = (e: React.MouseEvent, chatId: number) => {
@@ -111,7 +109,7 @@ export default function Sidebar({ isOpen, onToggle, chats, currentChat, onChatSe
             <h3 className="text-gray-400 text-xs font-medium px-2 mb-2">Recent</h3>
             <ul className="space-y-1">
               {chats.slice(0, showAllChats ? visibleChats : 5).map((chat) => (
-                <li key={chat.id} className={`group flex items-center justify-between px-2 py-1 rounded cursor-pointer transition-colors ${currentChat?.id === chat.id ? 'bg-[#3A3C3E]' : 'hover:bg-[#3A3C3E]'}`} onClick={() => onChatSelect(chat)}>
+                <li key={chat.id} className={`group flex items-center justify-between px-2 py-1 rounded cursor-pointer transition-colors ${currentChat?.id === chat.id ? 'bg-[#3A3C3E]' : 'hover:bg-[#3A3C3E]'}`} onClick={() => onChatSelect(chat)} onMouseEnter={() => setHoveredChatId(chat.id)} onMouseLeave={() => setHoveredChatId(null)}>
                   <div className="flex items-center gap-2 flex-1">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
                       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -123,9 +121,8 @@ export default function Sidebar({ isOpen, onToggle, chats, currentChat, onChatSe
                         onChange={(e) => setNewTitle(e.target.value)}
                         onBlur={() => handleTitleChange(chat.id)}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleTitleChange(chat.id)
-                          } else if (e.key === 'Escape') {
+                          if (e.key === 'Enter') handleTitleChange(chat.id)
+                          if (e.key === 'Escape') {
                             setEditingChatId(null)
                             setNewTitle('')
                           }
@@ -138,34 +135,41 @@ export default function Sidebar({ isOpen, onToggle, chats, currentChat, onChatSe
                     )}
                   </div>
                   <div className="relative flex items-center">
-                    <button onClick={(e) => handleMenuClick(e, chat.id)} className="text-gray-400 hover:text-white">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="5" r="1" />
-                        <circle cx="12" cy="12" r="1" />
-                        <circle cx="12" cy="19" r="1" />
+                    {hoveredChatId === chat.id || menuOpenId === chat.id ? (
+                      <button onClick={(e) => handleMenuClick(e, chat.id)} className="text-gray-400 hover:text-white">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="5" r="1" />
+                          <circle cx="12" cy="12" r="1" />
+                          <circle cx="12" cy="19" r="1" />
+                        </svg>
+                      </button>
+                    ) : chat.isPinned ? (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
                       </svg>
-                    </button>
+                    ) : null}
                     {menuOpenId === chat.id && (
-                      <div ref={menuRef} className="fixed left-[280px] top-[var(--menu-top)] ml-2 py-1 w-36 bg-[#1E2021] border border-[#2D2F31] rounded-lg shadow-lg z-[9999]">
+                      <div ref={menuRef} className="fixed left-[280px] top-[var(--menu-top)] ml-2 py-1 w-32 bg-[#1E2021] border border-[#2D2F31] rounded-lg shadow-lg z-[9999]">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            handlePinClick(chat.id)
+                            onPinChat(chat.id)
                           }}
-                          className="flex items-center gap-2 w-full px-3 py-1 text-left text-white hover:bg-[#3A3C3E] transition-colors">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          className="flex items-center gap-2 w-full px-2 py-1 text-left text-white text-xs hover:bg-[#3A3C3E] transition-colors">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                             <circle cx="12" cy="10" r="3" />
                           </svg>
-                          Pin
+                          {chat.isPinned ? 'Unpin' : 'Pin'}
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
                             handleEditClick(chat)
                           }}
-                          className="flex items-center gap-2 w-full px-3 py-1 text-left text-white hover:bg-[#3A3C3E] transition-colors">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          className="flex items-center gap-2 w-full px-2 py-1 text-left text-white text-xs hover:bg-[#3A3C3E] transition-colors">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                           </svg>
@@ -177,12 +181,10 @@ export default function Sidebar({ isOpen, onToggle, chats, currentChat, onChatSe
                             onDeleteChat(chat.id)
                             setMenuOpenId(null)
                           }}
-                          className="flex items-center gap-2 w-full px-3 py-1 text-left text-white hover:bg-[#3A3C3E] transition-colors">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          className="flex items-center gap-2 w-full px-2 py-1 text-left text-white text-xs hover:bg-[#3A3C3E] transition-colors">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M3 6h18" />
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            <path d="M10 11v6" />
-                            <path d="M14 11v6" />
                           </svg>
                           Delete
                         </button>
