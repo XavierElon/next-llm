@@ -43,4 +43,32 @@ model Message {
   createdAt      DateTime     @default(now()) @map("created_at")
 
   @@map("messages")
+}
+
+model Problem {
+  id          Int         @id @default(autoincrement())
+  title       String
+  description String      @db.Text
+  difficulty  String      // 'Easy', 'Medium', 'Hard'
+  category    String      // 'Algorithms', 'Data Structures', etc.
+  tags        String[]    @db.Text
+  functionName String     // Name of the function to test against
+  testCases   TestCase[]
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@map("problems")
+}
+
+model TestCase {
+  id          Int      @id @default(autoincrement())
+  input       String   @db.Text
+  expected    String   @db.Text
+  description String?  @db.Text
+  problemId   Int      @map("problem_id")
+  problem     Problem  @relation(fields: [problemId], references: [id])
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("test_cases")
 } 
