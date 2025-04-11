@@ -142,47 +142,38 @@ const tooltipStyles = `
 .language-label {
   display: flex;
   align-items: center;
-  background: #252526;
-  border: 1px solid #3d3e3f;
-  border-radius: 4px;
-  padding: 2px 8px;
   font-size: 11px;
   color: #cccccc;
-  height: 22px;
 }
 
 .theme-select {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  background: #252526;
-  border: 1px solid #3d3e3f;
-  border-radius: 4px;
-  padding: 2px 8px;
+  gap: 4px;
   font-size: 11px;
   color: #cccccc;
   cursor: pointer;
-  height: 22px;
   position: relative;
-  min-width: 80px;
 }
 
 .theme-select:hover {
-  background: #2a2a2a;
+  color: #ffffff;
 }
 
 .theme-select::after {
   content: '';
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
+  display: inline-block;
+  margin-left: 4px;
   width: 0;
   height: 0;
-  border-left: 3px solid transparent;
-  border-right: 3px solid transparent;
-  border-top: 3px solid #cccccc;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid #cccccc;
   pointer-events: none;
+}
+
+.theme-select:hover::after {
+  border-top-color: #ffffff;
 }
 
 .select-dropdown {
@@ -191,11 +182,12 @@ const tooltipStyles = `
   top: 100%;
   left: 0;
   right: 0;
-  background: #252526;
-  border: 1px solid #3d3e3f;
+  background: #454545;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   margin-top: 4px;
   z-index: 1000;
+  min-width: 100px;
 }
 
 .theme-select.open .select-dropdown {
@@ -208,7 +200,7 @@ const tooltipStyles = `
 }
 
 .option:hover {
-  background: #2a2a2a;
+  background: rgba(0, 0, 0, 0.2);
 }
 `
 
@@ -320,7 +312,7 @@ export default function CodePage() {
     if (!problem) return
 
     setIsRunning(true)
-    setOutput('Running code...')
+    setOutput('')
     try {
       // Add a test case to capture print statements and return value separately
       const testCode = `
@@ -465,7 +457,7 @@ print("Return value:", result)
                       }
                     }}
                     tabIndex={0}>
-                    <span>{theme === 'vs-dark' ? 'Dark' : 'Light'}</span>
+                    {theme === 'vs-dark' ? 'Dark' : 'Light'}
                     <div className="select-dropdown">
                       <div
                         className="option"
@@ -623,34 +615,34 @@ print("Return value:", result)
                             <pre className="text-sm">{problem.testCases[selectedTestCase].expected}</pre>
                           </div>
                         </div>
-                        <div>
-                          <div className="text-gray-400 text-sm mb-1">Stdout</div>
-                          <div className="bg-[#262626] p-2 rounded max-h-[120px] overflow-auto">
-                            <pre className="text-sm whitespace-pre-wrap">
-                              {output
-                                ? output
+                        {output && (
+                          <>
+                            <div>
+                              <div className="text-gray-400 text-sm mb-1">Stdout</div>
+                              <div className="bg-[#262626] p-2 rounded max-h-[120px] overflow-auto">
+                                <pre className="text-sm whitespace-pre-wrap">
+                                  {output
                                     .split('\n')
                                     .filter((line) => !line.startsWith('Return value:'))
                                     .join('\n')
-                                    .trim() || 'null'
-                                : 'Run your code to see print statements...'}
-                            </pre>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-gray-400 text-sm mb-1">Output</div>
-                          <div className="bg-[#262626] p-2 rounded">
-                            <pre className="text-sm">
-                              {output
-                                ? output
+                                    .trim() || 'null'}
+                                </pre>
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-gray-400 text-sm mb-1">Output</div>
+                              <div className="bg-[#262626] p-2 rounded">
+                                <pre className="text-sm">
+                                  {output
                                     .split('\n')
                                     .find((line) => line.startsWith('Return value:'))
                                     ?.replace('Return value:', '')
-                                    .trim()
-                                : 'Run your code to see returned value...'}
-                            </pre>
-                          </div>
-                        </div>
+                                    .trim()}
+                                </pre>
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
