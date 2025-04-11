@@ -118,7 +118,18 @@ export default function CodePage() {
     setIsRunning(true)
     setOutput('Running code...')
     try {
-      const result = await runCode(language, code)
+      // Add a test case to capture print statements
+      const testCode = `
+${code}
+
+# Test the function with a sample input
+print("=== Running your code ===")
+input = "test"
+result = ${problem.functionName}(input)
+print("=== Function returned ===")
+print(result)
+`
+      const result = await runCode(language, testCode)
       setOutput(result)
     } catch (error: any) {
       setOutput(`Error: ${error?.message || 'An error occurred'}`)
