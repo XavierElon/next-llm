@@ -66,10 +66,6 @@ export default function CodePage() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Check if the user is typing in a text input or textarea
-      const isTyping = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement
-      if (isTyping) return
-
       // Command + ' for Run Code
       if ((e.metaKey || e.ctrlKey) && e.key === "'") {
         e.preventDefault()
@@ -83,9 +79,10 @@ export default function CodePage() {
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [code, problem]) // Add dependencies that the handlers use
+    // Add the event listener to the document to catch events before the editor
+    document.addEventListener('keydown', handleKeyDown, true)
+    return () => document.removeEventListener('keydown', handleKeyDown, true)
+  }, [code, problem])
 
   const getDefaultCode = (lang: string, problem?: Problem) => {
     if (!problem) {
@@ -97,9 +94,7 @@ export default function CodePage() {
     if (lang === 'python') {
       return `def ${functionName}(input):
     # Your solution here
-    pass
-
-`
+    pass`
     }
     return `// Problem: ${problem.title}
 // ${problem.description}
@@ -262,7 +257,7 @@ print(result)
                 </div>
 
                 <div className="flex gap-4">
-                  <button onClick={handleRunCode} disabled={isRunning} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                  <button onClick={handleRunCode} disabled={isRunning} className="bg-[#2d2e2f] hover:bg-[#3d3e3f] text-white px-4 py-1.5 rounded text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                     {isRunning ? (
                       <>
                         <span className="loading-dot"></span>
@@ -274,7 +269,7 @@ print(result)
                     )}
                   </button>
 
-                  <button onClick={handleSubmitCode} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                  <button onClick={handleSubmitCode} disabled={isSubmitting} className="bg-[#2d2e2f] hover:bg-[#3d3e3f] text-white px-4 py-1.5 rounded text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                     {isSubmitting ? (
                       <>
                         <span className="loading-dot"></span>
@@ -297,6 +292,13 @@ print(result)
                     theme={theme}
                     value={code}
                     onChange={(value) => setCode(value || '')}
+                    beforeMount={(monaco) => {
+                      monaco.editor.addKeybindingRule({
+                        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
+                        command: 'noop',
+                        when: 'editorTextFocus'
+                      })
+                    }}
                     options={{
                       minimap: { enabled: true },
                       fontSize: 14,
@@ -307,7 +309,26 @@ print(result)
                       tabSize: 2,
                       wordWrap: 'on',
                       formatOnPaste: true,
-                      formatOnType: true
+                      formatOnType: true,
+                      quickSuggestions: false,
+                      suggestOnTriggerCharacters: false,
+                      acceptSuggestionOnEnter: 'off',
+                      lineDecorationsWidth: 0,
+                      lineNumbersMinChars: 3,
+                      renderLineHighlight: 'none',
+                      scrollbar: {
+                        vertical: 'hidden',
+                        horizontal: 'hidden',
+                        useShadows: false,
+                        verticalScrollbarSize: 0,
+                        horizontalScrollbarSize: 0
+                      },
+                      multiCursorModifier: 'alt',
+                      autoClosingBrackets: 'never',
+                      autoClosingQuotes: 'never',
+                      autoSurround: 'never',
+                      glyphMargin: false,
+                      folding: false
                     }}
                   />
                 </div>
