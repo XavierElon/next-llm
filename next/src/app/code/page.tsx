@@ -114,14 +114,14 @@ export default function CodePage() {
     setIsRunning(true)
     setOutput('Running code...')
     try {
-      // Add a test case to capture print statements
+      // Add a test case to capture print statements and return value separately
       const testCode = `
 ${code}
 
 # Test the function with a sample input
 input = "test"
 result = ${problem.functionName}(input)
-print(result)
+print("Return value:", result)
 `
       const result = await runCode(language, testCode)
       setOutput(result)
@@ -151,7 +151,7 @@ ${code}
 # Test case ${i + 1}
 input = ${test.input}
 result = ${problem.functionName}(input)
-print(result)
+print("Return value:", result)
 `
 
         let result
@@ -354,29 +354,50 @@ print(result)
                           </button>
                         ))}
                       </div>
-                      <div className="p-4 space-y-2">
+                      <div className="flex flex-col gap-4 p-4">
                         <div>
-                          <div className="text-gray-400 text-sm">Input</div>
-                          <div className="bg-[#262626] p-2 rounded mt-1">
+                          <div className="text-gray-400 text-sm mb-1">Input</div>
+                          <div className="bg-[#262626] p-2 rounded">
                             <pre className="text-sm">nums = {problem.testCases[selectedTestCase].input}</pre>
                           </div>
                         </div>
                         <div>
-                          <div className="text-gray-400 text-sm">Expected</div>
-                          <div className="bg-[#262626] p-2 rounded mt-1">
+                          <div className="text-gray-400 text-sm mb-1">Expected</div>
+                          <div className="bg-[#262626] p-2 rounded">
                             <pre className="text-sm">{problem.testCases[selectedTestCase].expected}</pre>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-gray-400 text-sm mb-1">Stdout</div>
+                          <div className="bg-[#262626] p-2 rounded max-h-[120px] overflow-auto">
+                            <pre className="text-sm whitespace-pre-wrap">
+                              {output
+                                ? output
+                                    .split('\n')
+                                    .filter((line) => !line.startsWith('Return value:'))
+                                    .join('\n')
+                                    .trim() || 'null'
+                                : 'Run your code to see print statements...'}
+                            </pre>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-gray-400 text-sm mb-1">Output</div>
+                          <div className="bg-[#262626] p-2 rounded">
+                            <pre className="text-sm">
+                              {output
+                                ? output
+                                    .split('\n')
+                                    .find((line) => line.startsWith('Return value:'))
+                                    ?.replace('Return value:', '')
+                                    .trim()
+                                : 'Run your code to see returned value...'}
+                            </pre>
                           </div>
                         </div>
                       </div>
                     </div>
                   )}
-                </div>
-
-                <div className="w-1/3 p-4 bg-[#1b1c1d] border-l border-gray-700">
-                  <div className="font-mono bg-[#2d2e2f] rounded-lg p-4 h-full overflow-auto">
-                    <h2 className="text-sm text-gray-400 mb-2">Output:</h2>
-                    <pre className="text-sm whitespace-pre-wrap">{output || 'Run your code to see output...'}</pre>
-                  </div>
                 </div>
               </div>
             </div>
