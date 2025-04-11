@@ -35,6 +35,7 @@ export default function CodePage() {
   const [problem, setProblem] = useState<Problem | null>(null)
   const [loading, setLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedTestCase, setSelectedTestCase] = useState(0)
 
   // Audio for success and failure sounds
   const successSound = typeof window !== 'undefined' ? new Audio('/assets/grunt-birthday-party-sound-effect.mp3') : null
@@ -118,10 +119,8 @@ export default function CodePage() {
 ${code}
 
 # Test the function with a sample input
-print("=== Running your code ===")
 input = "test"
 result = ${problem.functionName}(input)
-print("=== Function returned ===")
 print(result)
 `
       const result = await runCode(language, testCode)
@@ -246,9 +245,9 @@ print(result)
             <div className="bg-[#2d2e2f] rounded-lg shadow-lg overflow-hidden">
               <div className="p-4 border-b border-gray-700 flex items-center justify-between">
                 <div className="flex gap-4">
-                  <select value={language} onChange={(e) => handleLanguageChange(e.target.value)} className="bg-[#1b1c1d] text-white px-4 py-2 rounded-lg border border-gray-700">
+                  {/* <select value={language} onChange={(e) => handleLanguageChange(e.target.value)} className="bg-[#1b1c1d] text-white px-4 py-2 rounded-lg border border-gray-700">
                     <option value="python">Python</option>
-                  </select>
+                  </select> */}
 
                   <select value={theme} onChange={(e) => setTheme(e.target.value)} className="bg-[#1b1c1d] text-white px-4 py-2 rounded-lg border border-gray-700">
                     <option value="vs-dark">Dark</option>
@@ -284,53 +283,93 @@ print(result)
               </div>
 
               <div className="flex">
-                <div className="flex-1" style={{ height: '600px' }}>
-                  <Editor
-                    height="100%"
-                    defaultLanguage="python"
-                    language={language}
-                    theme={theme}
-                    value={code}
-                    onChange={(value) => setCode(value || '')}
-                    beforeMount={(monaco) => {
-                      monaco.editor.addKeybindingRule({
-                        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
-                        command: 'noop',
-                        when: 'editorTextFocus'
-                      })
-                    }}
-                    options={{
-                      minimap: { enabled: true },
-                      fontSize: 14,
-                      lineNumbers: 'on',
-                      roundedSelection: false,
-                      scrollBeyondLastLine: false,
-                      automaticLayout: true,
-                      tabSize: 2,
-                      wordWrap: 'on',
-                      formatOnPaste: true,
-                      formatOnType: true,
-                      quickSuggestions: false,
-                      suggestOnTriggerCharacters: false,
-                      acceptSuggestionOnEnter: 'off',
-                      lineDecorationsWidth: 0,
-                      lineNumbersMinChars: 3,
-                      renderLineHighlight: 'none',
-                      scrollbar: {
-                        vertical: 'hidden',
-                        horizontal: 'hidden',
-                        useShadows: false,
-                        verticalScrollbarSize: 0,
-                        horizontalScrollbarSize: 0
-                      },
-                      multiCursorModifier: 'alt',
-                      autoClosingBrackets: 'never',
-                      autoClosingQuotes: 'never',
-                      autoSurround: 'never',
-                      glyphMargin: false,
-                      folding: false
-                    }}
-                  />
+                <div className="flex-1 flex flex-col">
+                  <div style={{ height: 'calc(100vh - 400px)', minHeight: '400px', maxHeight: '500px' }}>
+                    <Editor
+                      height="100%"
+                      defaultLanguage="python"
+                      language={language}
+                      theme={theme}
+                      value={code}
+                      onChange={(value) => setCode(value || '')}
+                      beforeMount={(monaco) => {
+                        monaco.editor.addKeybindingRule({
+                          keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
+                          command: 'noop',
+                          when: 'editorTextFocus'
+                        })
+
+                        monaco.editor.defineTheme('custom-dark', {
+                          base: 'vs-dark',
+                          inherit: true,
+                          rules: [],
+                          colors: {
+                            'editor.background': '#262626'
+                          }
+                        })
+                      }}
+                      onMount={(editor) => {
+                        editor.updateOptions({ theme: 'custom-dark' })
+                      }}
+                      options={{
+                        minimap: { enabled: true },
+                        fontSize: 14,
+                        lineNumbers: 'on',
+                        roundedSelection: false,
+                        scrollBeyondLastLine: false,
+                        automaticLayout: true,
+                        tabSize: 2,
+                        wordWrap: 'on',
+                        formatOnPaste: true,
+                        formatOnType: true,
+                        quickSuggestions: false,
+                        suggestOnTriggerCharacters: false,
+                        acceptSuggestionOnEnter: 'off',
+                        lineDecorationsWidth: 0,
+                        lineNumbersMinChars: 3,
+                        renderLineHighlight: 'none',
+                        scrollbar: {
+                          vertical: 'hidden',
+                          horizontal: 'hidden',
+                          useShadows: false,
+                          verticalScrollbarSize: 0,
+                          horizontalScrollbarSize: 0
+                        },
+                        multiCursorModifier: 'alt',
+                        autoClosingBrackets: 'never',
+                        autoClosingQuotes: 'never',
+                        autoSurround: 'never',
+                        glyphMargin: false,
+                        folding: false
+                      }}
+                    />
+                  </div>
+
+                  {problem && problem.testCases && (
+                    <div className="bg-[#1e1e1e] border-t border-gray-700">
+                      <div className="flex items-center gap-2 px-4 py-2">
+                        {problem.testCases.map((testCase, index) => (
+                          <button key={testCase.id} onClick={() => setSelectedTestCase(index)} className={`px-3 py-1 rounded-md text-sm ${index === selectedTestCase ? 'bg-[#2d2e2f] text-white' : 'text-gray-400 hover:text-white'}`}>
+                            Case {index + 1}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="p-4 space-y-2">
+                        <div>
+                          <div className="text-gray-400 text-sm">Input</div>
+                          <div className="bg-[#262626] p-2 rounded mt-1">
+                            <pre className="text-sm">nums = {problem.testCases[selectedTestCase].input}</pre>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-gray-400 text-sm">Expected</div>
+                          <div className="bg-[#262626] p-2 rounded mt-1">
+                            <pre className="text-sm">{problem.testCases[selectedTestCase].expected}</pre>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="w-1/3 p-4 bg-[#1b1c1d] border-l border-gray-700">
