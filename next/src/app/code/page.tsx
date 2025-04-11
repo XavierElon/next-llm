@@ -312,7 +312,7 @@ print("Return value:", result)
                         editor.updateOptions({ theme: 'custom-dark' })
                       }}
                       options={{
-                        minimap: { enabled: true },
+                        minimap: { enabled: false },
                         fontSize: 14,
                         lineNumbers: 'on',
                         roundedSelection: false,
