@@ -56,9 +56,9 @@ export async function runCode(language: string, code: string): Promise<string> {
     const timeout = setTimeout(() => {
       if (process) {
         process.kill()
-        throw new Error('Execution timed out after 15 seconds')
+        throw new Error('Execution timed out after 5 seconds')
       }
-    }, 15000)
+    }, 5000)
 
     let output = ''
     process.output.pipeTo(
