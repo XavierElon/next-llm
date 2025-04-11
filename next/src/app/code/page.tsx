@@ -5,6 +5,213 @@ import { useSearchParams } from 'next/navigation'
 import Editor from '@monaco-editor/react'
 import { runCode } from '@/services/webcontainer'
 
+// Add styles at the top of the file
+const tooltipStyles = `
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip {
+  visibility: hidden;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #252526;
+  color: #cccccc;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  margin-top: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.key {
+  background-color: #333333;
+  padding: 0px 3px;
+  border-radius: 3px;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11px;
+  border: 1px solid #464646;
+}
+
+.tooltip-container:hover .tooltip {
+  visibility: visible;
+}
+
+.button-group {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: #333333;
+  border-radius: 5px;
+}
+
+.action-button {
+  height: 28px;
+  padding: 0 8px;
+  background: #252526;
+  border: none;
+  color: #cccccc;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.action-button:hover {
+  background: #2a2a2a;
+}
+
+.action-button.submit-button {
+  color: #89D185;
+}
+
+.action-button:first-child {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+.action-button:last-child {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.action-button svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.debug-button {
+  padding: 0 6px;
+}
+
+.action-button.debug-button {
+  padding: 0 6px;
+  color: #DDB100;
+}
+
+.language-select {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #252526;
+  border: 1px solid #3d3e3f;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: #cccccc;
+  cursor: pointer;
+  height: 22px;
+}
+
+.language-select:hover {
+  background: #2a2a2a;
+}
+
+.language-select select {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  padding-right: 12px;
+}
+
+.language-select::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-top: 3px solid #cccccc;
+  margin-left: -8px;
+  pointer-events: none;
+}
+
+.language-label {
+  display: flex;
+  align-items: center;
+  background: #252526;
+  border: 1px solid #3d3e3f;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: #cccccc;
+  height: 22px;
+}
+
+.theme-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #252526;
+  border: 1px solid #3d3e3f;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: #cccccc;
+  cursor: pointer;
+  height: 22px;
+  position: relative;
+  min-width: 80px;
+}
+
+.theme-select:hover {
+  background: #2a2a2a;
+}
+
+.theme-select::after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-top: 3px solid #cccccc;
+  pointer-events: none;
+}
+
+.select-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #252526;
+  border: 1px solid #3d3e3f;
+  border-radius: 4px;
+  margin-top: 4px;
+  z-index: 1000;
+}
+
+.theme-select.open .select-dropdown {
+  display: block;
+}
+
+.option {
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.option:hover {
+  background: #2a2a2a;
+}
+`
+
 interface TestCase {
   id: number
   input: string
@@ -36,6 +243,7 @@ export default function CodePage() {
   const [loading, setLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedTestCase, setSelectedTestCase] = useState(0)
+  const [isThemeOpen, setIsThemeOpen] = useState(false)
 
   // Audio for success and failure sounds
   const successSound = typeof window !== 'undefined' ? new Audio('/assets/grunt-birthday-party-sound-effect.mp3') : null
@@ -245,40 +453,88 @@ print("Return value:", result)
             <div className="bg-[#2d2e2f] rounded-lg shadow-lg overflow-hidden">
               <div className="p-4 border-b border-gray-700 flex items-center justify-between">
                 <div className="flex gap-4">
-                  {/* <select value={language} onChange={(e) => handleLanguageChange(e.target.value)} className="bg-[#1b1c1d] text-white px-4 py-2 rounded-lg border border-gray-700">
-                    <option value="python">Python</option>
-                  </select> */}
+                  <div className="language-label">Python3</div>
 
-                  <select value={theme} onChange={(e) => setTheme(e.target.value)} className="bg-[#1b1c1d] text-white px-4 py-2 rounded-lg border border-gray-700">
-                    <option value="vs-dark">Dark</option>
-                    <option value="light">Light</option>
-                  </select>
+                  <div
+                    className={`theme-select ${isThemeOpen ? 'open' : ''}`}
+                    onClick={() => setIsThemeOpen(!isThemeOpen)}
+                    onBlur={(e) => {
+                      // Only close if the next focus target is outside our dropdown
+                      if (!e.currentTarget.contains(e.relatedTarget)) {
+                        setIsThemeOpen(false)
+                      }
+                    }}
+                    tabIndex={0}>
+                    <span>{theme === 'vs-dark' ? 'Dark' : 'Light'}</span>
+                    <div className="select-dropdown">
+                      <div
+                        className="option"
+                        onMouseDown={() => {
+                          setTheme('vs-dark')
+                          setIsThemeOpen(false)
+                        }}>
+                        Dark
+                      </div>
+                      <div
+                        className="option"
+                        onMouseDown={() => {
+                          setTheme('light')
+                          setIsThemeOpen(false)
+                        }}>
+                        Light
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex gap-4">
-                  <button onClick={handleRunCode} disabled={isRunning} className="bg-[#2d2e2f] hover:bg-[#3d3e3f] text-white px-4 py-1.5 rounded text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                    {isRunning ? (
-                      <>
-                        <span className="loading-dot"></span>
-                        <span className="loading-dot"></span>
-                        <span className="loading-dot"></span>
-                      </>
-                    ) : (
-                      'Run Code'
-                    )}
-                  </button>
+                <div className="flex items-center gap-2 pr-4">
+                  <style>{tooltipStyles}</style>
+                  <div className="button-group">
+                    <div className="tooltip-container">
+                      <button onClick={handleRunCode} disabled={isRunning} className="action-button">
+                        {isRunning ? (
+                          <>
+                            <span className="loading-dot"></span>
+                            <span className="loading-dot"></span>
+                            <span className="loading-dot"></span>
+                          </>
+                        ) : (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                              <path d="M3.78 2L3 2.41v11.18L3.78 14l8.45-5.1v-.8L3.78 2z" />
+                            </svg>
+                            Run
+                          </>
+                        )}
+                      </button>
+                      <div className="tooltip">
+                        Run <span className="key">⌘</span>
+                        <span className="key">'</span>
+                      </div>
+                    </div>
 
-                  <button onClick={handleSubmitCode} disabled={isSubmitting} className="bg-[#2d2e2f] hover:bg-[#3d3e3f] text-white px-4 py-1.5 rounded text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                    {isSubmitting ? (
-                      <>
-                        <span className="loading-dot"></span>
-                        <span className="loading-dot"></span>
-                        <span className="loading-dot"></span>
-                      </>
-                    ) : (
-                      'Submit'
-                    )}
-                  </button>
+                    <div className="tooltip-container">
+                      <button onClick={handleSubmitCode} disabled={isSubmitting} className="action-button submit-button">
+                        Submit
+                      </button>
+                      <div className="tooltip">
+                        Submit <span className="key">⌘</span>
+                        <span className="key">Enter</span>
+                      </div>
+                    </div>
+
+                    <div className="tooltip-container">
+                      <button onClick={() => {}} className="action-button debug-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                          <path d="M8 4.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm0 6.25a2.75 2.75 0 1 1 0-5.5 2.75 2.75 0 0 1 0 5.5zm6.25-4.5h-1.25a4.49 4.49 0 0 0-1.536-2.536l.884-.884a.5.5 0 1 0-.707-.707l-1.027 1.027A4.5 4.5 0 0 0 8 2.75a4.49 4.49 0 0 0-2.614.85L4.359 2.573a.5.5 0 1 0-.707.707l.884.884A4.49 4.49 0 0 0 3 6.25H1.75a.5.5 0 0 0 0 1h1.25c0 .675.149 1.317.42 1.888l-.795.796a.5.5 0 1 0 .707.707l.927-.927A4.5 4.5 0 0 0 8 11.25a4.5 4.5 0 0 0 3.741-1.996l.927.927a.5.5 0 1 0 .707-.707l-.795-.796c.271-.571.42-1.213.42-1.888h1.25a.5.5 0 0 0 0-1z" />
+                        </svg>
+                      </button>
+                      <div className="tooltip">
+                        Debug <span className="key">⌘</span>
+                        <span className="key">B</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
