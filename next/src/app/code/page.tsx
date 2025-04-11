@@ -64,6 +64,29 @@ export default function CodePage() {
     fetchProblem()
   }, [problemId, language])
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if the user is typing in a text input or textarea
+      const isTyping = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement
+      if (isTyping) return
+
+      // Command + ' for Run Code
+      if ((e.metaKey || e.ctrlKey) && e.key === "'") {
+        e.preventDefault()
+        handleRunCode()
+      }
+
+      // Command + Enter for Submit
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault()
+        handleSubmitCode()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [code, problem]) // Add dependencies that the handlers use
+
   const getDefaultCode = (lang: string, problem?: Problem) => {
     if (!problem) {
       return '// Select a problem to start coding'
