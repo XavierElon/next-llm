@@ -417,18 +417,17 @@ export default function Chat() {
           <div className={`fixed bottom-0 p-4 bg-[#1b1c1d] transition-all duration-300 ${isSidebarOpen ? 'left-[280px]' : 'left-16'}`} style={{ width: `calc(100% - ${isSidebarOpen ? '280px' : '64px'})` }}>
             <div className="max-w-3xl mx-auto">
               <div className="relative flex items-center bg-[#1b1c1d] border border-[#3A3C3E] rounded-xl shadow-lg">
-                {/* Left Section with plus button and image preview */}
-                <div className="flex flex-col justify-center pl-4 py-3">
-                  {prompt === '' && !attachedImage && <span className="text-sm text-gray-400 mb-1">Ask Gemini</span>}
-                  <div className="relative">
+                {/* Left section with plus button */}
+                <div className="flex flex-col items-start pl-4 py-2 min-w-[48px]">
+                  <div className="relative mt-8">
                     <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
-                    <button className="text-gray-400 hover:text-white w-4 h-4 flex items-center justify-center" onClick={() => fileInputRef.current?.click()}>
+                    <button className="text-gray-400 hover:text-white w-8 h-8 flex items-center justify-center" onClick={() => fileInputRef.current?.click()}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 4v16m8-8H4" />
                       </svg>
                     </button>
                     {attachedImage && (
-                      <div className="absolute left-6 bottom-0 bg-gray-800 rounded-lg p-1">
+                      <div className="absolute left-8 bottom-0 bg-gray-800 rounded-lg p-1">
                         <img src={attachedImage} alt="Attached" className="w-16 h-16 object-cover rounded" />
                         <button onClick={() => setAttachedImage(null)} className="absolute -top-1 -right-1 bg-red-500 rounded-full p-0.5 hover:bg-red-600">
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -441,12 +440,12 @@ export default function Chat() {
                 </div>
 
                 {/* Textarea */}
-                <div className="relative flex-1">
-                  <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={handleKeyDown} className="flex-1 w-full pt-3 pb-4 pl-4 pr-4 bg-[#1b1c1d] border-none rounded-xl resize-none text-white placeholder-gray-400 focus:outline-none" placeholder="" rows={2} style={{ minHeight: '70px' }} />
+                <div className="relative flex-1 -ml-[48px]">
+                  <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={handleKeyDown} className="flex-1 w-full pt-3 pb-4 pl-[48px] pr-4 bg-[#1b1c1d] border-none rounded-xl resize-none text-white placeholder-gray-400 focus:outline-none" placeholder="Ask Gemini" rows={2} style={{ minHeight: '70px' }} />
                 </div>
 
-                {/* Right Icons */}
-                <div className="flex items-center gap-2 pr-4">
+                {/* Send button */}
+                <div className="pr-4">
                   <button onClick={handleSubmit} disabled={isLoading || !prompt.trim() || !currentChat} className="text-gray-400 hover:text-white disabled:text-gray-600">
                     {isLoading ? (
                       <span className="loading">...</span>
