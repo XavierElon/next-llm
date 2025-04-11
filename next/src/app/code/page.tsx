@@ -34,6 +34,7 @@ export default function CodePage() {
   const [isRunning, setIsRunning] = useState(false)
   const [problem, setProblem] = useState<Problem | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Audio for success and failure sounds
   const successSound = typeof window !== 'undefined' ? new Audio('/assets/grunt-birthday-party-sound-effect.mp3') : null
@@ -71,57 +72,17 @@ export default function CodePage() {
     const functionName = problem.functionName || 'solution'
 
     if (lang === 'python') {
-      return `# Problem: ${problem.title}
-# ${problem.description}
-
-def ${functionName}(input):
+      return `def ${functionName}(input):
     # Your solution here
     pass
 
-# Test cases will be automatically run when you click "Run Code"
 `
     }
-    switch (lang) {
-      case 'javascript':
-        return `// Problem: ${problem.title}
-// ${problem.description}
-
-function ${functionName}(input) {
-    // Your solution here
-}
-
-// Test cases will be automatically run when you click "Run Code"
-`
-      case 'typescript':
-        return `// Problem: ${problem.title}
-// ${problem.description}
-
-function ${functionName}(input: any): any {
-    // Your solution here
-}
-
-// Test cases will be automatically run when you click "Run Code"
-`
-      case 'java':
-        return `// Problem: ${problem.title}
-// ${problem.description}
-
-public class Solution {
-    public static Object ${functionName}(Object input) {
-        // Your solution here
-        return null;
-    }
-}
-
-// Test cases will be automatically run when you click "Run Code"
-`
-      default:
-        return `// Problem: ${problem.title}
+    return `// Problem: ${problem.title}
 // ${problem.description}
 
 // Your solution here
 `
-    }
   }
 
   const handleLanguageChange = (newLang: string) => {
@@ -132,6 +93,21 @@ public class Solution {
     if (!problem) return
 
     setIsRunning(true)
+    setOutput('Running code...')
+    try {
+      const result = await runCode(language, code)
+      setOutput(result)
+    } catch (error: any) {
+      setOutput(`Error: ${error?.message || 'An error occurred'}`)
+    } finally {
+      setIsRunning(false)
+    }
+  }
+
+  const handleSubmitCode = async () => {
+    if (!problem) return
+
+    setIsSubmitting(true)
     setOutput('Running tests...')
     try {
       let allTestsPassed = true
@@ -204,7 +180,7 @@ print(result)
     } catch (error: any) {
       setOutput(`Error: ${error?.message || 'An error occurred'}`)
     } finally {
-      setIsRunning(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -243,15 +219,6 @@ print(result)
                 <div className="flex gap-4">
                   <select value={language} onChange={(e) => handleLanguageChange(e.target.value)} className="bg-[#1b1c1d] text-white px-4 py-2 rounded-lg border border-gray-700">
                     <option value="python">Python</option>
-                    <option value="javascript">JavaScript</option>
-                    <option value="typescript">TypeScript</option>
-                    <option value="java">Java</option>
-                    <option value="cpp">C++</option>
-                    <option value="csharp">C#</option>
-                    <option value="php">PHP</option>
-                    <option value="ruby">Ruby</option>
-                    <option value="go">Go</option>
-                    <option value="rust">Rust</option>
                   </select>
 
                   <select value={theme} onChange={(e) => setTheme(e.target.value)} className="bg-[#1b1c1d] text-white px-4 py-2 rounded-lg border border-gray-700">
@@ -260,17 +227,31 @@ print(result)
                   </select>
                 </div>
 
-                <button onClick={handleRunCode} disabled={isRunning} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                  {isRunning ? (
-                    <>
-                      <span className="loading-dot"></span>
-                      <span className="loading-dot"></span>
-                      <span className="loading-dot"></span>
-                    </>
-                  ) : (
-                    'Run Code'
-                  )}
-                </button>
+                <div className="flex gap-4">
+                  <button onClick={handleRunCode} disabled={isRunning} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                    {isRunning ? (
+                      <>
+                        <span className="loading-dot"></span>
+                        <span className="loading-dot"></span>
+                        <span className="loading-dot"></span>
+                      </>
+                    ) : (
+                      'Run Code'
+                    )}
+                  </button>
+
+                  <button onClick={handleSubmitCode} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                    {isSubmitting ? (
+                      <>
+                        <span className="loading-dot"></span>
+                        <span className="loading-dot"></span>
+                        <span className="loading-dot"></span>
+                      </>
+                    ) : (
+                      'Submit'
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div className="flex">
